@@ -1,4 +1,4 @@
-const CACHE_NAME = 'trakfit-pwa-current-v1';
+const CACHE_NAME = 'trakfit-v8-cache';
 const ASSETS = ['./', './index.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', event => {
