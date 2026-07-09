@@ -1,7 +1,7 @@
 {
   "name": "TrakFit",
   "short_name": "TrakFit",
-  "description": "Nutrition, hydration, macros, fiber, weight, and progress tracking.",
+  "description": "Nutrition, hydration, macros, fiber, walking, weight, and progress tracking.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
