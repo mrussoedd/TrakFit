@@ -1,5 +1,5 @@
-const CACHE_NAME = 'trakfit-v15-cache';
-const ASSETS = ['./', './index.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
+const CACHE_NAME = 'trakfit-v16-cache';
+const ASSETS = ['./', './index.html', './manifest.json', './icons/icon-32.png', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)));
