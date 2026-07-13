@@ -1,4 +1,4 @@
-const CACHE_NAME = 'trakfit-v13-cache';
+const CACHE_NAME = 'trakfit-v14-cache';
 const ASSETS = ['./', './index.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', event => {

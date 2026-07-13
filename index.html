@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#0D2342" />
-<title>TrakFit V13</title>
+<title>TrakFit V14</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -138,12 +138,33 @@ let selectedKey=todayKey(); let activeEntries=entriesFor(selectedKey); let searc
 
 function dayDiff(fromKey,toKey){if(!fromKey||!toKey)return null;let a=new Date(fromKey+'T00:00:00'),b=new Date(toKey+'T00:00:00');return Math.round((b-a)/86400000)}
 function timeAgo(iso){if(!iso)return 'First visit';let ms=Date.now()-new Date(iso).getTime();if(!isFinite(ms)||ms<0)return 'Just now';let mins=Math.floor(ms/60000);if(mins<1)return 'Just now';if(mins<60)return mins+' min ago';let hrs=Math.floor(mins/60);if(hrs<24)return hrs+' hr'+(hrs===1?'':'s')+' ago';let days=Math.floor(hrs/24);if(days<30)return days+' day'+(days===1?'':'s')+' ago';let months=Math.floor(days/30);return months+' month'+(months===1?'':'s')+' ago'}
-function setupDailySplash(){
-  let overlay=$('dailySplash');if(!overlay)return;
+function setupDailySplash(force=false){
+  let overlay=$('dailySplash');
+  if(!overlay)return;
+
+  // Avoid reopening immediately after the user dismisses it, but show it again
+  // when the installed PWA is relaunched or returns after being away.
+  let now=Date.now();
+  let lastShown=Number(sessionStorage.getItem('trakfitSplashShownAt')||0);
+  if(!force && now-lastShown<30000)return;
+
   let today=todayKey();
-  let lastOpenAt=load('lastOpenAt',null),lastOpenDate=load('lastOpenDate',null),streak=parseInt(load('loginStreak',0),10)||0;
-  let diff=dayDiff(lastOpenDate,today);
-  if(!lastOpenDate)streak=1;else if(diff===1)streak+=1;else if(diff>1)streak=1;else streak=Math.max(streak,1);
+  let lastOpenAt=load('lastOpenAt',null);
+  let lastLoginDate=load('lastLoginDate',load('lastOpenDate',null));
+  let streak=parseInt(load('loginStreak',0),10)||0;
+  let diff=dayDiff(lastLoginDate,today);
+
+  // Count at most one login toward the streak per calendar day.
+  if(!lastLoginDate){
+    streak=1;
+  }else if(diff===1){
+    streak+=1;
+  }else if(diff>1){
+    streak=1;
+  }else{
+    streak=Math.max(streak,1);
+  }
+
   let todayTotals=entryTotalsForDate(new Date());
   let weekWalk=currentWeekDays().map(d=>walkTotalsForDate(d)).reduce((a,b)=>a+b.miles,0);
   let caloriesLeft=Math.round((settings.calGoal||1500)-(todayTotals.kcal||0));
@@ -156,29 +177,57 @@ function setupDailySplash(){
   if(weekWalk>=(settings.walkGoal||2)*7)messages.push('Excellent work — your walking week is on pace.');
   if(streak>=7)messages.push(streak+' straight days. Consistency is becoming your strength.');
   messages.push('Small steps count.','Progress over perfection.','Walk with purpose. Fuel with wisdom.','One faithful step at a time.');
-  let idx=(today+String(streak)+String(new Date().getHours())).split('').reduce((a,c)=>a+c.charCodeAt(0),0)%messages.length;
-  let logo=document.querySelector('.brand-logo');if(logo&&$('splashLogo'))$('splashLogo').src=logo.src;
+  let idx=(today+String(streak)+String(hour)).split('').reduce((a,c)=>a+c.charCodeAt(0),0)%messages.length;
+
+  let logo=document.querySelector('.brand-logo');
+  if(logo&&$('splashLogo'))$('splashLogo').src=logo.src;
   $('splashDate').textContent=greeting+', Dr. Russo · '+new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'});
   $('splashMessage').textContent=messages[idx];
   $('splashLastUpdate').textContent=timeAgo(lastOpenAt);
   $('splashStreak').textContent=streak+' day'+(streak===1?'':'s');
-  $('splashCaloriesLeft').textContent=(caloriesLeft>=0?caloriesLeft:Math.abs(caloriesLeft)+' over');
+  $('splashCaloriesLeft').textContent=caloriesLeft>=0?caloriesLeft:Math.abs(caloriesLeft)+' over';
   $('splashWalkWeek').textContent=one(weekWalk)+' mi';
+
   function setSplashProgress(textId,barId,current,goal,suffix){
     if(!$(textId)||!$(barId))return;
-    goal=goal||1;let pct=Math.max(0,Math.min(100,(current/goal)*100));
+    goal=goal||1;
+    let pct=Math.max(0,Math.min(100,(current/goal)*100));
     $(textId).textContent=one(current)+suffix+' / '+one(goal)+suffix;
     $(barId).style.width=pct+'%';
   }
   setSplashProgress('splashWaterText','splashWaterBar',todayTotals.water||0,settings.waterGoal||100,'oz');
   setSplashProgress('splashProteinText','splashProteinBar',todayTotals.protein||0,settings.proteinGoal||120,'g');
   setSplashProgress('splashFiberText','splashFiberBar',todayTotals.fiber||0,settings.fiberGoal||25,'g');
+
   overlay.classList.remove('hidden');
-  save('lastOpenDate',today);save('lastOpenAt',new Date().toISOString());save('loginStreak',streak);
-  $('splashContinue').onclick=()=>overlay.classList.add('hidden');
-  if($('splashLogFood'))$('splashLogFood').onclick=()=>{overlay.classList.add('hidden');switchTab('food')};
-  if($('splashStartWalk'))$('splashStartWalk').onclick=()=>{overlay.classList.add('hidden');switchTab('walking')};
+  sessionStorage.setItem('trakfitSplashShownAt',String(now));
+  save('lastLoginDate',today);
+  save('lastOpenDate',today); // preserve compatibility with older versions
+  save('lastOpenAt',new Date().toISOString());
+  save('loginStreak',streak);
+
+  const closeSplash=()=>{
+    overlay.classList.add('hidden');
+    sessionStorage.setItem('trakfitSplashDismissedAt',String(Date.now()));
+  };
+  $('splashContinue').onclick=closeSplash;
+  if($('splashLogFood'))$('splashLogFood').onclick=()=>{closeSplash();switchTab('food')};
+  if($('splashStartWalk'))$('splashStartWalk').onclick=()=>{closeSplash();switchTab('walking')};
 }
+
+// Installed iPhone PWAs may resume without reloading. Show the splash on initial
+// load and again when the app returns to the foreground after being away.
+let trakfitHiddenAt=0;
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden'){
+    trakfitHiddenAt=Date.now();
+  }else if(document.visibilityState==='visible' && Date.now()-trakfitHiddenAt>30000){
+    setupDailySplash(true);
+  }
+});
+window.addEventListener('pageshow',event=>{
+  if(event.persisted)setupDailySplash(true);
+});
 function refreshActiveEntries(){activeEntries=entriesFor(selectedKey); if($('logDate')) $('logDate').value=selectedKey; if($('selectedLogLabel')) $('selectedLogLabel').textContent=selectedKey===todayKey()?'Today’s food log':'Food log for '+selectedKey;}
 $('headerDate').textContent=prettyDate(new Date());
 function toast(msg){$('toast').textContent=msg;$('toast').classList.remove('hidden');setTimeout(()=>$('toast').classList.add('hidden'),1800)}
@@ -240,7 +289,7 @@ $('startScan').onclick=startBarcodeScan;$('stopScan').onclick=()=>{try{if(scanne
 
 document.querySelectorAll('.tab').forEach(btn=>btn.onclick=()=>switchTab(btn.dataset.tab));document.querySelectorAll('[data-tab-jump]').forEach(btn=>btn.onclick=()=>switchTab(btn.dataset.tabJump));
 function switchTab(name){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));['dashboard','food','walking','progress','settings'].forEach(v=>$('view-'+v).classList.toggle('hidden',v!==name));if(name==='progress')renderProgress();if(name==='walking'){renderWalkLog();renderWalkingSummary();setTimeout(()=>$('walkMiles').focus(),50)}if(name==='settings')loadSettingsForm();if(name==='dashboard')renderDashboard();if(name==='food'){refreshActiveEntries();renderLog();renderFavorites();setTimeout(()=>$('foodSearch').focus(),50)}}
-loadSettingsForm();renderAll();setupDailySplash();
+loadSettingsForm();renderAll();setupDailySplash(true);
 })();
 </script>
 </body>
