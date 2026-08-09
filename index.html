@@ -18,6 +18,9 @@
 
 <link rel="apple-touch-icon" href="./icons/icon-180.png">
 <link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-32.png">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#0D2342">
 </head>
 <body>
 <div class="splash-overlay hidden" id="dailySplash" role="dialog" aria-modal="true" aria-labelledby="splashTitle">
@@ -88,6 +91,7 @@
 </div>
 
 <div id="view-settings" class="hidden">
+  <div class="panel"><p class="panel-label">Profile</p><label>Your name</label><input type="text" id="setUserName" placeholder="Enter your first name" autocomplete="name"><p class="small" style="margin-top:8px">Your name stays on this device and is used only to personalize the TrakFit greeting.</p></div>
   <div class="panel"><p class="panel-label">Goals</p><div class="row2"><div><label>Calories</label><input type="number" id="setCalGoal"></div><div><label>Protein g</label><input type="number" id="setProteinGoal"></div></div><div class="row2"><div><label>Carbs g</label><input type="number" id="setCarbsGoal"></div><div><label>Fat g</label><input type="number" id="setFatGoal"></div></div><div class="row2"><div><label>Fiber g</label><input type="number" id="setFiberGoal"></div><div><label>Water oz</label><input type="number" id="setWaterGoal"></div></div><div class="row2"><div><label>Walking miles/day</label><input type="number" id="setWalkGoal" step="0.1" inputmode="decimal"></div><div><label>Steps per mile</label><input type="number" id="setStepsPerMile" step="50" inputmode="numeric"></div></div><div class="row2"><div><label>Starting weight</label><input type="number" id="setStartWeight" inputmode="decimal"></div><div><label>Goal weight</label><input type="number" id="setGoalWeight" inputmode="decimal"></div></div><div class="actions"><button class="btn" id="saveSettings">Save goals</button></div></div>
   <div class="panel"><p class="panel-label">Data</p><p class="small">Data is stored on this device in this browser. For iPhone, add this page to the Home Screen and always open the same icon.</p><div class="actions"><button class="btn secondary" id="exportCsv">Export CSV</button><button class="btn warn" id="clearToday">Clear today</button></div></div>
 </div>
@@ -136,7 +140,7 @@ function prettyDate(d){return d.toLocaleDateString(undefined,{weekday:'short',mo
 function entriesFor(k){return load('log:'+k,[])} function saveEntries(k,v){save('log:'+k,v)}
 let settings=load('settings',{calGoal:1500,proteinGoal:120,carbsGoal:130,fatGoal:50,fiberGoal:25,waterGoal:100,walkGoal:2,stepsPerMile:2200,startWeight:null,goalWeight:null});
 settings.walkGoal=settings.walkGoal||2; settings.stepsPerMile=settings.stepsPerMile||2200;
-settings={calGoal:settings.calGoal||1500,proteinGoal:settings.proteinGoal||120,carbsGoal:settings.carbsGoal||130,fatGoal:settings.fatGoal||50,fiberGoal:settings.fiberGoal||25,waterGoal:settings.waterGoal||100,walkGoal:settings.walkGoal||2,stepsPerMile:settings.stepsPerMile||2200,startWeight:settings.startWeight||null,goalWeight:settings.goalWeight||null};
+settings={userName:(settings.userName||'').trim(),calGoal:settings.calGoal||1500,proteinGoal:settings.proteinGoal||120,carbsGoal:settings.carbsGoal||130,fatGoal:settings.fatGoal||50,fiberGoal:settings.fiberGoal||25,waterGoal:settings.waterGoal||100,walkGoal:settings.walkGoal||2,stepsPerMile:settings.stepsPerMile||2200,startWeight:settings.startWeight||null,goalWeight:settings.goalWeight||null};
 let selectedKey=todayKey(); let activeEntries=entriesFor(selectedKey); let searchTimer=null; let searchAbort=null; let scannerControls=null;
 
 function dayDiff(fromKey,toKey){if(!fromKey||!toKey)return null;let a=new Date(fromKey+'T00:00:00'),b=new Date(toKey+'T00:00:00');return Math.round((b-a)/86400000)}
@@ -184,7 +188,8 @@ function setupDailySplash(force=false){
 
   const splashLogo=$('splashLogo');
   
-  $('splashDate').textContent=greeting+', Dr. Russo · '+new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  let personalizedGreeting=greeting+(settings.userName?', '+settings.userName:'');
+  $('splashDate').textContent=personalizedGreeting+' · '+new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'});
   $('splashMessage').textContent=messages[idx];
   $('splashLastUpdate').textContent=timeAgo(lastOpenAt);
   $('splashStreak').textContent=streak+' day'+(streak===1?'':'s');
@@ -299,8 +304,8 @@ function renderWalkLog(){if(!$('walkLogList'))return;let arr=walksFor(selectedKe
 function renderWalkingSummary(){if(!$('walkWeekMiles'))return;let week=currentWeekDays().map(d=>walkTotalsForDate(d)),weekMiles=week.reduce((a,b)=>a+b.miles,0),days=7;let thirty=getDays(30).map(d=>walkTotalsForDate(d)),thirtyMiles=thirty.reduce((a,b)=>a+b.miles,0);$('walkWeekMiles').textContent=one(weekMiles);$('walkWeekAvg').textContent=one(weekMiles/days);$('walk30Miles').textContent=one(thirtyMiles);$('walkGoalDays').textContent=week.filter(x=>x.miles>=(settings.walkGoal||2)).length}
 $('addWalkBtn').onclick=()=>addWalk($('walkMiles').value,$('walkMinutes').value,$('walkSteps').value,$('walkNote').value);document.querySelectorAll('.quick-walk').forEach(b=>b.onclick=()=>addWalk(b.dataset.miles,'','','Quick walk'));if($('walkDate')){$('walkDate').value=selectedKey;$('walkDate').onchange=()=>{if($('walkDate').value){selectedKey=$('walkDate').value;if($('logDate'))$('logDate').value=selectedKey;refreshActiveEntries();renderAll();toast('Editing '+selectedKey)}};$('walkJumpToday').onclick=()=>{selectedKey=todayKey();if($('logDate'))$('logDate').value=selectedKey;$('walkDate').value=selectedKey;refreshActiveEntries();renderAll();toast('Editing today')}}
 $('saveWeight').onclick=()=>{let w=parseFloat($('weightInput').value),gw=parseFloat($('goalWeightInput').value);if(gw>0){settings.goalWeight=gw;save('settings',settings)}if(w>0){let weights=load('weights',[]).filter(x=>x.date!==selectedKey);weights.push({date:selectedKey,weight:w});weights.sort((a,b)=>a.date.localeCompare(b.date));save('weights',weights);$('weightInput').value='';toast('Weight saved')}renderProgress()};
-function loadSettingsForm(){['Cal','Protein','Carbs','Fat','Fiber','Water'].forEach(x=>{});$('setCalGoal').value=settings.calGoal;$('setProteinGoal').value=settings.proteinGoal;$('setCarbsGoal').value=settings.carbsGoal;$('setFatGoal').value=settings.fatGoal;$('setFiberGoal').value=settings.fiberGoal;$('setWaterGoal').value=settings.waterGoal;$('setWalkGoal').value=settings.walkGoal||2;$('setStepsPerMile').value=settings.stepsPerMile||2200;$('setStartWeight').value=settings.startWeight||'';$('setGoalWeight').value=settings.goalWeight||''}
-$('saveSettings').onclick=()=>{settings.calGoal=parseInt($('setCalGoal').value,10)||1500;settings.proteinGoal=parseInt($('setProteinGoal').value,10)||120;settings.carbsGoal=parseInt($('setCarbsGoal').value,10)||130;settings.fatGoal=parseInt($('setFatGoal').value,10)||50;settings.fiberGoal=parseInt($('setFiberGoal').value,10)||25;settings.waterGoal=parseInt($('setWaterGoal').value,10)||100;settings.walkGoal=parseFloat($('setWalkGoal').value)||2;settings.stepsPerMile=parseInt($('setStepsPerMile').value,10)||2200;settings.startWeight=parseFloat($('setStartWeight').value)||null;settings.goalWeight=parseFloat($('setGoalWeight').value)||null;save('settings',settings);renderAll();toast('Goals saved')};
+function loadSettingsForm(){['Cal','Protein','Carbs','Fat','Fiber','Water'].forEach(x=>{});if($('setUserName'))$('setUserName').value=settings.userName||'';$('setCalGoal').value=settings.calGoal;$('setProteinGoal').value=settings.proteinGoal;$('setCarbsGoal').value=settings.carbsGoal;$('setFatGoal').value=settings.fatGoal;$('setFiberGoal').value=settings.fiberGoal;$('setWaterGoal').value=settings.waterGoal;$('setWalkGoal').value=settings.walkGoal||2;$('setStepsPerMile').value=settings.stepsPerMile||2200;$('setStartWeight').value=settings.startWeight||'';$('setGoalWeight').value=settings.goalWeight||''}
+$('saveSettings').onclick=()=>{settings.userName=($('setUserName')?.value||'').trim();settings.calGoal=parseInt($('setCalGoal').value,10)||1500;settings.proteinGoal=parseInt($('setProteinGoal').value,10)||120;settings.carbsGoal=parseInt($('setCarbsGoal').value,10)||130;settings.fatGoal=parseInt($('setFatGoal').value,10)||50;settings.fiberGoal=parseInt($('setFiberGoal').value,10)||25;settings.waterGoal=parseInt($('setWaterGoal').value,10)||100;settings.walkGoal=parseFloat($('setWalkGoal').value)||2;settings.stepsPerMile=parseInt($('setStepsPerMile').value,10)||2200;settings.startWeight=parseFloat($('setStartWeight').value)||null;settings.goalWeight=parseFloat($('setGoalWeight').value)||null;save('settings',settings);renderAll();toast('Profile and goals saved')};
 $('clearToday').onclick=()=>{if(confirm('Clear entries for '+selectedKey+'?')){activeEntries=[];saveEntries(selectedKey,activeEntries);renderAll()}};
 $('exportCsv').onclick=()=>{let rows=[['date','type','name','detail','calories','protein_g','carbs_g','fat_g','fiber_g','water_oz','walk_miles','walk_minutes','walk_steps']];for(let i=364;i>=0;i--){let d=new Date();d.setDate(d.getDate()-i);let k=dateKey(d),ent=entriesFor(k);ent.forEach(e=>rows.push([k,'nutrition',e.name||'',e.detail||'',round(e.kcal),one(e.protein),one(e.carbs),one(e.fat),one(e.fiber),round(e.water),'','','']));walksFor(k).forEach(w=>rows.push([k,'walking',w.note||'Walk',one(w.miles)+' mi','','','','','','',one(w.miles),round(w.minutes),round(w.steps)]))}let csv=rows.map(r=>r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\n');let blob=new Blob([csv],{type:'text/csv'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='trakfit-export.csv';a.click();URL.revokeObjectURL(url)};
 
@@ -314,6 +319,11 @@ document.querySelectorAll('.tab').forEach(btn=>btn.onclick=()=>switchTab(btn.dat
 function switchTab(name){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));['dashboard','food','walking','progress','settings'].forEach(v=>$('view-'+v).classList.toggle('hidden',v!==name));if(name==='progress')renderProgress();if(name==='walking'){renderWalkLog();renderWalkingSummary();setTimeout(()=>$('walkMiles').focus(),50)}if(name==='settings')loadSettingsForm();if(name==='dashboard')renderDashboard();if(name==='food'){refreshActiveEntries();renderLog();renderFavorites();setTimeout(()=>$('foodSearch').focus(),50)}}
 loadSettingsForm();renderAll();setupDailySplash(true);
 })();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js'));
+}
 </script>
 </body>
 </html>
