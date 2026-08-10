@@ -1,4 +1,4 @@
-const CACHE_NAME = 'trakfit-v18-1';
+const CACHE_NAME = 'trakfit-v19-1';
 const ASSETS = [
   './',
   './index.html',
