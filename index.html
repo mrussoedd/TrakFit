@@ -117,7 +117,7 @@
 </div>
 </div>
 
-<p class="small" style="text-align:center;margin:10px 0 0">TrakFit V26</p>
+<p class="small" style="text-align:center;margin:10px 0 0">TrakFit V27</p>
 <div class="tabbar"><button class="tab active" data-tab="dashboard">Dash</button><button class="tab" data-tab="food">Food</button><button class="tab" data-tab="walking">Walking</button><button class="tab" data-tab="progress">Progress</button><button class="tab" data-tab="settings">Goals</button></div>
 <div class="toast hidden" id="toast"></div>
 
@@ -562,7 +562,13 @@ $('startScan').onclick=startBarcodeScan;$('stopScan').onclick=()=>{try{if(scanne
 
 document.querySelectorAll('.tab').forEach(btn=>btn.onclick=()=>switchTab(btn.dataset.tab));document.querySelectorAll('[data-tab-jump]').forEach(btn=>btn.onclick=()=>switchTab(btn.dataset.tabJump));
 function switchTab(name){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));['dashboard','food','walking','progress','settings'].forEach(v=>$('view-'+v).classList.toggle('hidden',v!==name));if(name==='progress')renderProgress();if(name==='walking'){renderWalkLog();renderWalkingSummary();setTimeout(()=>$('walkMiles').focus(),50)}if(name==='settings')loadSettingsForm();if(name==='dashboard')renderDashboard();if(name==='food'){refreshActiveEntries();renderLog();renderFavorites();renderRecentFoods();setTimeout(()=>$('foodSearch').focus(),50)}}
-loadSettingsForm();renderProfile();renderAll();setupDailySplash(true);
+loadSettingsForm();renderProfile();
+// Show the splash before the heavier dashboard/meal rendering so a later
+// rendering issue can never suppress the app's opening screen.
+setupDailySplash(true);
+renderAll();
+// Extra startup safeguard for installed PWAs/browser restores.
+window.addEventListener('load',()=>{if($('dailySplash')&&$('dailySplash').classList.contains('hidden')&&!sessionStorage.getItem('trakfitSplashDismissedAt'))setupDailySplash(true)},{once:true});
 })();
 </script>
 <script>
