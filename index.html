@@ -69,7 +69,8 @@
 
 <div id="view-food" class="hidden">
   <div class="panel"><p class="panel-label">Log date</p><div class="date-chip"><div><label>Choose day to edit</label><input type="date" id="logDate"></div><button class="btn secondary" id="jumpToday">Today</button></div><p class="small">Use this to go back and add, remove, or correct food and water from a previous day.</p></div>
-  <div class="panel"><p class="panel-label">Search and add food</p><input type="text" id="foodSearch" placeholder="Search banana, egg, chicken, rice..." autocomplete="off"><p class="small">Tap a result, enter portions or grams, then Add. Search uses a built-in list first and Open Food Facts when online.</p><div id="searchResults"></div></div>
+  <div class="panel"><p class="panel-label">Search and add food</p><input type="text" id="foodSearch" placeholder="Search banana, egg, chicken, rice..." autocomplete="off"><p class="small">Search common foods and branded products. Tap a result, choose a serving size and quantity, then Add.</p><div id="searchResults"></div></div>
+  <div class="panel"><p class="panel-label">Recent foods</p><div id="recentFoodsList"></div><p class="empty-state hidden" id="recentEmpty">Foods you add will appear here for faster logging.</p></div>
   <div class="panel"><p class="panel-label">Barcode entry</p><p class="small">Scan a UPC barcode or type the number. Nutrition is pulled from Open Food Facts when available.</p><div class="actions"><button class="btn" id="startScan">Scan barcode</button><button class="btn secondary hidden" id="stopScan">Stop camera</button></div><video id="barcodeVideo" class="scanner-video hidden" muted playsinline></video><div class="row2"><div><label>Barcode number</label><input type="text" id="barcodeInput" inputmode="numeric" placeholder="e.g. 012345678905"></div><div style="display:flex;align-items:end"><button class="btn" id="lookupBarcode">Look up</button></div></div><div id="barcodeStatus"></div><div id="barcodeResults"></div><div class="muted-box small">Camera scanning requires HTTPS, which GitHub Pages provides. If the camera does not start on a browser, type the barcode number instead.</div></div>
   <div class="panel"><p class="panel-label">Favorites</p><div id="favoritesList"></div><p class="empty-state hidden" id="favEmpty">No favorites yet. Save foods you eat often.</p></div>
   <div class="panel"><p class="panel-label">Manual food with macros</p><button class="link-btn" id="manualToggle">Show manual entry</button><div class="hidden" id="manualForm"><label>Food name</label><input type="text" id="manualName" placeholder="Food name"><div class="row2"><div><label>Serving name</label><input type="text" id="manualServing" value="1 serving"></div><div><label>Serving grams</label><input type="number" id="manualGrams" inputmode="decimal" placeholder="optional"></div></div><div class="row3"><div><label>Cal/serving</label><input type="number" id="manualKcal" inputmode="decimal"></div><div><label>Protein g</label><input type="number" id="manualProtein" inputmode="decimal"></div><div><label>Carbs g</label><input type="number" id="manualCarbs" inputmode="decimal"></div></div><div class="row3"><div><label>Fat g</label><input type="number" id="manualFat" inputmode="decimal"></div><div><label>Fiber g</label><input type="number" id="manualFiber" inputmode="decimal"></div><div><label>Portions</label><input type="number" id="manualPortions" value="1" step="0.25" inputmode="decimal"></div></div><div class="actions"><button class="btn" id="manualAdd">Add food</button><button class="btn secondary" id="manualFav">Save favorite</button></div></div></div>
@@ -95,11 +96,12 @@
 
 <div id="view-settings" class="hidden">
   <div class="panel"><p class="panel-label">Goals</p><div class="row2"><div><label>Calories</label><input type="number" id="setCalGoal"></div><div><label>Protein g</label><input type="number" id="setProteinGoal"></div></div><div class="row2"><div><label>Carbs g</label><input type="number" id="setCarbsGoal"></div><div><label>Fat g</label><input type="number" id="setFatGoal"></div></div><div class="row2"><div><label>Fiber g</label><input type="number" id="setFiberGoal"></div><div><label>Water oz</label><input type="number" id="setWaterGoal"></div></div><div class="row2"><div><label>Walking miles/day</label><input type="number" id="setWalkGoal" step="0.1" inputmode="decimal"></div><div><label>Steps per mile</label><input type="number" id="setStepsPerMile" step="50" inputmode="numeric"></div></div><div class="row2"><div><label>Starting weight</label><input type="number" id="setStartWeight" inputmode="decimal"></div><div><label>Goal weight</label><input type="number" id="setGoalWeight" inputmode="decimal"></div></div><div class="actions"><button class="btn" id="saveSettings">Save goals</button></div></div>
+  <div class="panel"><p class="panel-label">Food search</p><label>USDA FoodData Central API key <span class="small">(optional)</span></label><input type="password" id="setUsdaApiKey" placeholder="Uses USDA DEMO_KEY if blank" autocomplete="off"><p class="small">A personal USDA key increases search capacity. It is stored only on this device and is never included in the TrakFit app files.</p></div>
   <div class="panel"><p class="panel-label">Data</p><p class="small">Data is stored on this device in this browser. For iPhone, add this page to the Home Screen and always open the same icon.</p><div class="actions"><button class="btn secondary" id="exportCsv">Export CSV</button><button class="btn warn" id="clearToday">Clear today</button></div></div>
 </div>
 </div>
 
-<p class="small" style="text-align:center;margin:10px 0 0">TrakFit V19</p>
+<p class="small" style="text-align:center;margin:10px 0 0">TrakFit V25</p>
 <div class="tabbar"><button class="tab active" data-tab="dashboard">Dash</button><button class="tab" data-tab="food">Food</button><button class="tab" data-tab="walking">Walking</button><button class="tab" data-tab="progress">Progress</button><button class="tab" data-tab="settings">Goals</button></div>
 <div class="toast hidden" id="toast"></div>
 
@@ -142,7 +144,7 @@ function prettyDate(d){return d.toLocaleDateString(undefined,{weekday:'short',mo
 function entriesFor(k){return load('log:'+k,[])} function saveEntries(k,v){save('log:'+k,v)}
 let settings=load('settings',{calGoal:1500,proteinGoal:120,carbsGoal:130,fatGoal:50,fiberGoal:25,waterGoal:100,walkGoal:2,stepsPerMile:2200,startWeight:null,goalWeight:null});
 settings.walkGoal=settings.walkGoal||2; settings.stepsPerMile=settings.stepsPerMile||2200;
-settings={userName:(settings.userName||'').trim(),calGoal:settings.calGoal||1500,proteinGoal:settings.proteinGoal||120,carbsGoal:settings.carbsGoal||130,fatGoal:settings.fatGoal||50,fiberGoal:settings.fiberGoal||25,waterGoal:settings.waterGoal||100,walkGoal:settings.walkGoal||2,stepsPerMile:settings.stepsPerMile||2200,startWeight:settings.startWeight||null,goalWeight:settings.goalWeight||null};
+settings={userName:(settings.userName||'').trim(),calGoal:settings.calGoal||1500,proteinGoal:settings.proteinGoal||120,carbsGoal:settings.carbsGoal||130,fatGoal:settings.fatGoal||50,fiberGoal:settings.fiberGoal||25,waterGoal:settings.waterGoal||100,walkGoal:settings.walkGoal||2,stepsPerMile:settings.stepsPerMile||2200,startWeight:settings.startWeight||null,goalWeight:settings.goalWeight||null,usdaApiKey:settings.usdaApiKey||''};
 let selectedKey=todayKey(); let activeEntries=entriesFor(selectedKey); let searchTimer=null; let searchAbort=null; let scannerControls=null;
 
 function dayDiff(fromKey,toKey){if(!fromKey||!toKey)return null;let a=new Date(fromKey+'T00:00:00'),b=new Date(toKey+'T00:00:00');return Math.round((b-a)/86400000)}
@@ -252,7 +254,7 @@ function currentMonthDays(){let now=new Date(),arr=[],d=new Date(now.getFullYear
 function foodToEntry(food,mult,detail){return {name:food.name,kcal:(food.kcal||0)*mult,protein:(food.protein||0)*mult,carbs:(food.carbs||0)*mult,fat:(food.fat||0)*mult,fiber:(food.fiber||0)*mult,detail}}
 function addEntry(entry){entry.id=Date.now()+'-'+Math.random().toString(36).slice(2,7);activeEntries.push(entry);saveEntries(selectedKey,activeEntries);renderAll();toast('Added to '+(selectedKey===todayKey()?'today':selectedKey))}
 function removeEntry(id){activeEntries=activeEntries.filter(e=>e.id!==id);saveEntries(selectedKey,activeEntries);renderAll()}
-function renderAll(){refreshActiveEntries();renderDashboard();renderLog();renderFavorites();renderWalkDashboard();renderWalkLog();renderWalkingSummary()}
+function renderAll(){refreshActiveEntries();renderDashboard();renderLog();renderFavorites();renderRecentFoods();renderWalkDashboard();renderWalkLog();renderWalkingSummary()}
 
 function walksFor(key){
   const data=load('walks:'+key,[]);
@@ -277,19 +279,157 @@ function renderWalkDashboard(){let wt=walkTotalsForKey(todayKey()), goal=Number(
 function macroCard(id,val,goal){$(id).textContent=one(val)+'g';$(id).classList.toggle('good',val>=goal)}
 function renderDashboard(){const t=totals(entriesFor(todayKey())), goal=Number(settings.calGoal)||1500;if($('dashCalGoal'))$('dashCalGoal').textContent=goal;if($('dashProteinGoal'))$('dashProteinGoal').textContent=settings.proteinGoal+'g';if($('dashCarbsGoal'))$('dashCarbsGoal').textContent=settings.carbsGoal+'g';if($('dashFatGoal'))$('dashFatGoal').textContent=settings.fatGoal+'g';if($('dashFiberGoal'))$('dashFiberGoal').textContent=settings.fiberGoal+'g';if($('dashWaterGoal'))$('dashWaterGoal').textContent=settings.waterGoal+'oz';if($('dashWalkGoal'))$('dashWalkGoal').textContent=one(settings.walkGoal||2);$('todayTotal').textContent=round(t.kcal);$('goalDisplay').textContent=goal;let rem=goal-t.kcal;$('remainingVal').textContent=round(rem);$('remainingVal').classList.toggle('over',rem<0);let pct=goal>0?t.kcal/goal*100:0;$('pctBar').style.width=Math.min(round(pct),100)+'%';$('pctBar').classList.toggle('over',pct>100);$('pctText').textContent=round(pct)+'% of goal';macroCard('proteinVal',t.protein,settings.proteinGoal);macroCard('carbsVal',t.carbs,settings.carbsGoal);macroCard('fatVal',t.fat,settings.fatGoal);macroCard('fiberVal',t.fiber,settings.fiberGoal);$('proteinSub').textContent='goal '+settings.proteinGoal+'g';$('carbsSub').textContent='goal '+settings.carbsGoal+'g';$('fatSub').textContent='goal '+settings.fatGoal+'g';$('fiberSub').textContent='goal '+settings.fiberGoal+'g';$('waterToday').textContent=round(t.water);$('waterGoalDisplay').textContent=settings.waterGoal+' oz';let waterRem=(settings.waterGoal||100)-t.water;$('waterRemaining').textContent=round(waterRem)+' oz';$('waterRemaining').classList.toggle('over',waterRem<0);let waterPct=(settings.waterGoal||100)>0?t.water/(settings.waterGoal||100)*100:0;$('waterBar').style.width=Math.min(round(waterPct),100)+'%';$('waterBar').classList.toggle('over',waterPct>100);$('waterPctText').textContent=round(waterPct)+'% of goal';const week=currentWeekDays().map(d=>entriesFor(dateKey(d)));let wt=week.map(e=>totals(e));let kcalSum=wt.reduce((a,b)=>a+b.kcal,0),pSum=wt.reduce((a,b)=>a+b.protein,0),fbrSum=wt.reduce((a,b)=>a+b.fiber,0),days=wt.filter(x=>x.kcal>0).length||7;$('weekTotal').textContent=round(kcalSum);$('weekAvg').textContent=round(kcalSum/days);$('weekProteinAvg').textContent=one(pSum/days)+'g';$('weekFiberAvg').textContent=one(fbrSum/days)+'g';$('weekWaterAvg').textContent=round(wt.reduce((a,b)=>a+b.water,0)/days)+'oz';$('weekUnder').textContent=wt.filter(x=>x.kcal>0&&x.kcal<=goal).length;const monthTotals=currentMonthDays().map(d=>entriesFor(dateKey(d))).map(e=>totals(e));let monthKcal=monthTotals.map(t=>t.kcal),md=monthKcal.filter(x=>x>0).length||new Date().getDate();$('monthTotal').textContent=round(monthKcal.reduce((a,b)=>a+b,0));$('monthAvg').textContent=round(monthKcal.reduce((a,b)=>a+b,0)/md);$('monthFiberAvg').textContent=one(monthTotals.reduce((a,b)=>a+b.fiber,0)/md)+'g'}
 function renderLog(){refreshActiveEntries();const list=$('logList');list.innerHTML='';if(!activeEntries.length){$('logEmpty').classList.remove('hidden');return}$('logEmpty').classList.add('hidden');activeEntries.forEach(e=>{let row=document.createElement('div');row.className='log-item';row.innerHTML='<div><div class="log-name"></div><div class="log-sub"></div></div><div class="log-right"><span class="log-kcal"></span><button class="del-btn" aria-label="Remove">×</button></div>';row.querySelector('.log-name').textContent=e.name;let bits=[];if(e.detail)bits.push(e.detail);if(e.protein)bits.push(one(e.protein)+'g P');if(e.carbs)bits.push(one(e.carbs)+'g C');if(e.fat)bits.push(one(e.fat)+'g F');if(e.fiber)bits.push(one(e.fiber)+'g fiber');if(e.water)bits.push(round(e.water)+'oz water');row.querySelector('.log-sub').textContent=bits.join(' · ');row.querySelector('.log-kcal').textContent=e.kcal?round(e.kcal)+' cal':'';row.querySelector('.del-btn').onclick=()=>removeEntry(e.id);list.appendChild(row)})}
-function localResults(q){let s=q.toLowerCase();return DB.filter(f=>f.name.toLowerCase().includes(s)).slice(0,8)}
-function offFood(p){let n=p.nutriments||{}, kcal=n['energy-kcal_serving']||n['energy-kcal_100g']||n['energy-kcal']||0; let grams=100, serving='100 g'; if(n['energy-kcal_serving']&&p.serving_quantity){grams=parseFloat(p.serving_quantity)||100;serving=p.serving_size||'1 serving'} return {name:(p.product_name||'Food')+(p.brands?' — '+String(p.brands).split(',')[0]:''),kcal:Number(kcal)||0,protein:Number(n.proteins_serving||n.proteins_100g)||0,carbs:Number(n.carbohydrates_serving||n.carbohydrates_100g)||0,fat:Number(n.fat_serving||n.fat_100g)||0,fiber:Number(n.fiber_serving||n.fiber_100g)||0,serving,grams,source:'Open Food Facts'} }
-$('foodSearch').addEventListener('input',()=>{clearTimeout(searchTimer);let q=$('foodSearch').value.trim();if(q.length<2){$('searchResults').innerHTML='';return}searchTimer=setTimeout(()=>runSearch(q),300)});
-async function runSearch(q){let results=localResults(q);$('searchResults').innerHTML='';if(results.length){let h=document.createElement('p');h.className='status-line';h.textContent='Built-in matches';$('searchResults').appendChild(h);results.forEach(f=>$('searchResults').appendChild(foodResult(f,false)))}else{$('searchResults').innerHTML='<p class="status-line">No built-in match. Searching online…</p>'}
-try{if(searchAbort)searchAbort.abort();searchAbort=new AbortController();let url='https://world.openfoodfacts.org/cgi/search.pl?search_terms='+encodeURIComponent(q)+'&search_simple=1&action=process&json=1&page_size=8';let res=await fetch(url,{signal:searchAbort.signal});let data=await res.json();let online=(data.products||[]).filter(p=>p.product_name&&p.nutriments&&(p.nutriments['energy-kcal_100g']||p.nutriments['energy-kcal_serving'])).map(offFood).filter(f=>f.kcal>0).slice(0,8);if(online.length){let h=document.createElement('p');h.className='status-line';h.textContent='Online matches';$('searchResults').appendChild(h);online.forEach(f=>$('searchResults').appendChild(foodResult(f,false))) }else if(!results.length){$('searchResults').innerHTML='<p class="empty-state">No match found. Use manual entry below.</p>'}}catch(e){if(e.name!=='AbortError'&&!results.length){$('searchResults').innerHTML='<p class="empty-state">Online search is unavailable. Try a simpler term or use manual entry.</p>'}}
+
+function normalizeFoodText(s){return String(s||'').toLowerCase().replace(/[^\w\s]/g,' ').replace(/\s+/g,' ').trim()}
+function recentFoods(){let r=load('recentFoods',[]);return Array.isArray(r)?r:[]}
+function rememberRecentFood(food){
+  let clean={name:food.name,kcal:Number(food.kcal)||0,protein:Number(food.protein)||0,carbs:Number(food.carbs)||0,fat:Number(food.fat)||0,fiber:Number(food.fiber)||0,serving:food.serving||'1 serving',grams:Number(food.grams)||100,source:food.source||'',fdcId:food.fdcId||null,measures:Array.isArray(food.measures)?food.measures.slice(0,12):null};
+  let r=recentFoods().filter(x=>x.name!==clean.name);
+  r.unshift(clean); save('recentFoods',r.slice(0,12)); renderRecentFoods();
 }
-function foodResult(food,isFav){let item=document.createElement('div');item.className='result-item';item.innerHTML='<div class="result-top"><div><div class="result-name"></div><div class="result-meta"></div></div><span class="log-kcal"></span></div><div class="result-expand hidden"><div class="row2"><div><label>Portions</label><input class="portions" type="number" value="1" step="0.25" inputmode="decimal"></div><div><label>Or grams</label><input class="grams" type="number" placeholder="optional" inputmode="decimal"></div></div><p class="macro-line calc"></p><div class="actions"><button class="btn add">Add</button><button class="btn secondary fav">Favorite</button></div></div>';item.querySelector('.result-name').textContent=food.name;item.querySelector('.result-meta').textContent=(food.serving||'1 serving')+' · P '+one(food.protein)+'g · C '+one(food.carbs)+'g · F '+one(food.fat)+'g · Fiber '+one(food.fiber)+'g'+(food.source?' · '+food.source:'');item.querySelector('.log-kcal').textContent=round(food.kcal)+' cal';let exp=item.querySelector('.result-expand'),portions=item.querySelector('.portions'),grams=item.querySelector('.grams'),calc=item.querySelector('.calc');function compute(){let mult=parseFloat(portions.value)||1,detail=one(mult)+' × '+(food.serving||'serving');if(grams.value){let g=parseFloat(grams.value)||0;mult=food.grams?g/food.grams:mult;detail=round(g)+' g'}return foodToEntry(food,mult,detail)}function update(){let c=compute();calc.textContent='Adds '+round(c.kcal)+' cal · P '+one(c.protein)+'g · C '+one(c.carbs)+'g · F '+one(c.fat)+'g · Fiber '+one(c.fiber)+'g'}portions.oninput=update;grams.oninput=update;item.querySelector('.result-top').onclick=()=>{let hidden=exp.classList.contains('hidden');document.querySelectorAll('.result-expand').forEach(x=>x.classList.add('hidden'));if(hidden){exp.classList.remove('hidden');update();portions.focus()}};item.querySelector('.add').onclick=()=>{addEntry(compute());$('foodSearch').value='';$('searchResults').innerHTML=''};item.querySelector('.fav').onclick=()=>saveFavorite(food);if(isFav)item.querySelector('.fav').classList.add('hidden');return item}
-function saveFavorite(food){let favs=load('favorites',[]);let clean={name:food.name,kcal:food.kcal,protein:food.protein||0,carbs:food.carbs||0,fat:food.fat||0,fiber:food.fiber||0,serving:food.serving||'1 serving',grams:food.grams||null};if(!favs.some(f=>f.name===clean.name)){favs.push(clean);save('favorites',favs);renderFavorites();toast('Saved favorite')}}
-function renderFavorites(){let list=$('favoritesList'),favs=load('favorites',[]);list.innerHTML='';if(!favs.length){$('favEmpty').classList.remove('hidden');return}$('favEmpty').classList.add('hidden');favs.forEach(f=>list.appendChild(foodResult(f,true)))}
-$('manualToggle').onclick=()=>$('manualForm').classList.toggle('hidden');
-function manualFood(){return {name:$('manualName').value.trim(),serving:$('manualServing').value.trim()||'1 serving',grams:parseFloat($('manualGrams').value)||null,kcal:parseFloat($('manualKcal').value)||0,protein:parseFloat($('manualProtein').value)||0,carbs:parseFloat($('manualCarbs').value)||0,fat:parseFloat($('manualFat').value)||0,fiber:parseFloat($('manualFiber').value)||0}}
-$('manualAdd').onclick=()=>{let f=manualFood(),p=parseFloat($('manualPortions').value)||1;if(!f.name||!f.kcal)return;addEntry(foodToEntry(f,p,one(p)+' × '+f.serving));['manualName','manualKcal','manualProtein','manualCarbs','manualFat','manualFiber','manualGrams'].forEach(id=>$(id).value='');$('manualServing').value='1 serving';$('manualPortions').value=1};
-$('manualFav').onclick=()=>{let f=manualFood();if(!f.name||!f.kcal)return;saveFavorite(f)};
+function renderRecentFoods(){
+  if(!$('recentFoodsList'))return;
+  let list=$('recentFoodsList'),items=recentFoods();list.innerHTML='';
+  if($('recentEmpty'))$('recentEmpty').classList.toggle('hidden',items.length>0);
+  items.slice(0,8).forEach(f=>list.appendChild(foodResult(f,false,true)));
+}
+function localScore(food,q){
+  let name=normalizeFoodText(food.name),s=normalizeFoodText(q),words=s.split(' ').filter(Boolean),score=0;
+  if(name===s)score+=100;if(name.startsWith(s))score+=60;if(name.includes(s))score+=30;
+  words.forEach(w=>{if(name.split(' ').includes(w))score+=18;else if(name.includes(w))score+=8});
+  return score
+}
+function localResults(q){return DB.map(f=>({f,score:localScore(f,q)})).filter(x=>x.score>0).sort((a,b)=>b.score-a.score).map(x=>x.f).slice(0,8)}
+function nutrientFrom(arr,names){
+  names=names.map(x=>x.toLowerCase());
+  for(const x of (arr||[])){
+    const n=String(x.nutrientName||x.nutrient?.name||'').toLowerCase();
+    if(names.some(k=>n===k||n.includes(k)))return Number(x.value ?? x.amount ?? 0)||0;
+  }
+  return 0
+}
+function usdaFood(f){
+  let n=f.foodNutrients||[];
+  return {
+    name:(f.description||'Food')+(f.brandOwner?' — '+f.brandOwner:''),
+    kcal:nutrientFrom(n.filter(x=>String(x.unitName||x.nutrient?.unitName||'').toUpperCase()==='KCAL'),['energy','energy (atwater general factors)','energy (atwater specific factors)']),
+    protein:nutrientFrom(n,['protein']),
+    carbs:nutrientFrom(n,['carbohydrate, by difference','carbohydrate']),
+    fat:nutrientFrom(n,['total lipid (fat)','fat']),
+    fiber:nutrientFrom(n,['fiber, total dietary','dietary fiber']),
+    serving:'100 g',grams:100,source:'USDA · '+(f.dataType||'FoodData Central'),fdcId:f.fdcId,
+    householdServing:f.householdServingFullText||'',servingSize:Number(f.servingSize)||0,servingSizeUnit:f.servingSizeUnit||''
+  }
+}
+function offFood(p){
+  let n=p.nutriments||{}, perServing=!!n['energy-kcal_serving'], grams=100, serving='100 g';
+  if(perServing&&p.serving_quantity){grams=parseFloat(p.serving_quantity)||100;serving=p.serving_size||'1 serving'}
+  return {name:(p.product_name||'Food')+(p.brands?' — '+String(p.brands).split(',')[0]:''),kcal:Number(perServing?n['energy-kcal_serving']:n['energy-kcal_100g'])||0,protein:Number(perServing?n.proteins_serving:n.proteins_100g)||0,carbs:Number(perServing?n.carbohydrates_serving:n.carbohydrates_100g)||0,fat:Number(perServing?n.fat_serving:n.fat_100g)||0,fiber:Number(perServing?n.fiber_serving:n.fiber_100g)||0,serving,grams,source:'Open Food Facts'}
+}
+function cleanMeasureLabel(s){return String(s||'').replace(/\s+/g,' ').trim()}
+function baseMeasures(food){
+  let grams=Number(food.grams)||100,serving=food.serving||'1 serving',m=[];
+  function add(label,g){g=Number(g)||0;if(g>0&&!m.some(x=>x.label.toLowerCase()===String(label).toLowerCase()))m.push({label:cleanMeasureLabel(label),grams:g})}
+  add(serving,grams);
+  let low=serving.toLowerCase(),num=parseFloat(low)||1;
+  if(low.includes('tbsp')){let per=grams/num;add('1 tbsp',per);add('2 tbsp',per*2);add('1/4 cup',per*4);add('1/2 cup',per*8)}
+  else if(low.includes('tsp')){let per=grams/num;add('1 tsp',per);add('1 tbsp',per*3)}
+  else if(low.includes('cup')){let per=grams/num;add('1/4 cup',per*.25);add('1/2 cup',per*.5);add('1 cup',per);add('1 tbsp',per/16)}
+  add('1 oz',28.3495); add('100 g',100);
+  return m
+}
+async function loadUsdaMeasures(food){
+  if(!food.fdcId)return baseMeasures(food);
+  if(Array.isArray(food.measures)&&food.measures.length)return food.measures;
+  let key=(settings.usdaApiKey||'').trim()||'DEMO_KEY';
+  try{
+    let res=await fetch('https://api.nal.usda.gov/fdc/v1/food/'+encodeURIComponent(food.fdcId)+'?api_key='+encodeURIComponent(key));
+    if(!res.ok)throw new Error('USDA details '+res.status);
+    let d=await res.json(),m=[];
+    function add(label,g){g=Number(g)||0;label=cleanMeasureLabel(label);if(g>0&&label&&!m.some(x=>x.label.toLowerCase()===label.toLowerCase()))m.push({label,grams:g})}
+    (d.foodPortions||[]).forEach(p=>{
+      let unit=p.measureUnit?.name||p.measureUnit?.abbreviation||'',modifier=p.portionDescription||p.modifier||unit||'serving',amount=Number(p.amount)||1;
+      let label=p.portionDescription||((amount!==1?one(amount)+' ':'')+modifier);
+      add(label,p.gramWeight);
+    });
+    if(d.householdServingFullText&&d.servingSize)add(d.householdServingFullText,d.servingSize);
+    else if(food.householdServing&&food.servingSize)add(food.householdServing,food.servingSize);
+    add('1 oz',28.3495);add('100 g',100);
+    food.measures=m.length?m:baseMeasures(food);
+    return food.measures
+  }catch(e){food.measures=baseMeasures(food);return food.measures}
+}
+function resultRank(food,q){
+  let name=normalizeFoodText(food.name),s=normalizeFoodText(q),score=0;
+  if(name===s)score+=120;if(name.startsWith(s))score+=70;if(name.includes(s))score+=35;
+  s.split(' ').forEach(w=>{if(name.split(' ').includes(w))score+=15});
+  if(String(food.source).includes('FNDDS')||String(food.source).includes('Foundation'))score+=20;
+  if(String(food.source).includes('Branded'))score-=5;
+  return score
+}
+$('foodSearch').addEventListener('input',()=>{clearTimeout(searchTimer);let q=$('foodSearch').value.trim();if(q.length<2){$('searchResults').innerHTML='';return}searchTimer=setTimeout(()=>runSearch(q),350)});
+async function runSearch(q){
+  if(searchAbort)searchAbort.abort(); const controller=new AbortController(); searchAbort=controller;
+  let local=localResults(q),recent=recentFoods().filter(f=>localScore(f,q)>0).slice(0,5);
+  $('searchResults').innerHTML='<p class="status-line">Searching TrakFit, USDA, and branded foods…</p>';
+  let key=(settings.usdaApiKey||'').trim()||'DEMO_KEY',usda=[],off=[];
+  const usdaPromise=fetch('https://api.nal.usda.gov/fdc/v1/foods/search?api_key='+encodeURIComponent(key)+'&query='+encodeURIComponent(q)+'&pageSize=12',{signal:controller.signal})
+    .then(r=>r.ok?r.json():Promise.reject(new Error('USDA '+r.status)))
+    .then(d=>{usda=(d.foods||[]).map(usdaFood).filter(f=>f.kcal>0||f.protein>0).sort((a,b)=>resultRank(b,q)-resultRank(a,q)).slice(0,8)}).catch(e=>{if(e.name==='AbortError')throw e});
+  const offPromise=fetch('https://world.openfoodfacts.org/cgi/search.pl?search_terms='+encodeURIComponent(q)+'&search_simple=1&action=process&json=1&page_size=10',{signal:controller.signal})
+    .then(r=>r.json()).then(d=>{off=(d.products||[]).filter(p=>p.product_name&&p.nutriments&&(p.nutriments['energy-kcal_100g']||p.nutriments['energy-kcal_serving'])).map(offFood).filter(f=>f.kcal>0).sort((a,b)=>resultRank(b,q)-resultRank(a,q)).slice(0,6)}).catch(e=>{if(e.name==='AbortError')throw e});
+  try{await Promise.allSettled([usdaPromise,offPromise])}catch(e){if(e.name==='AbortError')return}
+  if(searchAbort!==controller)return;
+  $('searchResults').innerHTML='';
+  function section(title,items){
+    if(!items.length)return;
+    let h=document.createElement('p');h.className='status-line';h.textContent=title;$('searchResults').appendChild(h);
+    items.forEach(f=>$('searchResults').appendChild(foodResult(f,false,false)));
+  }
+  let seen=new Set(),preferred=[];
+  [...recent,...local,...usda].forEach(f=>{let k=normalizeFoodText(f.name);if(!seen.has(k)){seen.add(k);preferred.push(f)}});
+  section('Best matches',preferred.slice(0,10));
+  let branded=off.filter(f=>!seen.has(normalizeFoodText(f.name)));
+  section('Branded matches',branded.slice(0,6));
+  if(!preferred.length&&!branded.length)$('searchResults').innerHTML='<p class="empty-state">No match found. Try a simpler food name or use manual entry below.</p>';
+}
+function foodResult(food,isFav,isRecent=false){
+  let item=document.createElement('div');item.className='result-item';
+  item.innerHTML='<div class="result-top"><div><div class="result-name"></div><div class="result-meta"></div></div><span class="log-kcal"></span></div><div class="result-expand hidden"><div class="row2"><div><label>Quantity</label><input class="qty" type="number" value="1" min="0.1" step="0.25" inputmode="decimal"></div><div><label>Serving size</label><select class="serving-select"></select></div></div><div class="custom-grams hidden"><label>Custom grams</label><input class="grams" type="number" min="1" inputmode="decimal" placeholder="grams"></div><p class="macro-line calc"></p><div class="actions"><button class="btn add">Add</button><button class="btn secondary fav">Favorite</button></div></div>';
+  item.querySelector('.result-name').textContent=food.name;
+  item.querySelector('.result-meta').textContent=(food.serving||'100 g')+' · P '+one(food.protein)+'g · C '+one(food.carbs)+'g · F '+one(food.fat)+'g · Fiber '+one(food.fiber)+'g'+(food.source?' · '+food.source:'');
+  item.querySelector('.log-kcal').textContent=round(food.kcal)+' cal';
+  let exp=item.querySelector('.result-expand'),qty=item.querySelector('.qty'),sel=item.querySelector('.serving-select'),grams=item.querySelector('.grams'),custom=item.querySelector('.custom-grams'),calc=item.querySelector('.calc');
+  function fillMeasures(measures){
+    sel.innerHTML='';
+    measures.forEach((m,i)=>{let o=document.createElement('option');o.value=String(m.grams);o.textContent=m.label;sel.appendChild(o)});
+    let o=document.createElement('option');o.value='custom';o.textContent='Custom grams';sel.appendChild(o);
+  }
+  fillMeasures(food.measures||baseMeasures(food));
+  function compute(){
+    let q=Math.max(.01,parseFloat(qty.value)||1),g;
+    if(sel.value==='custom'){g=Math.max(0,parseFloat(grams.value)||0)}else g=(parseFloat(sel.value)||Number(food.grams)||100)*q;
+    let mult=(Number(food.grams)||100)>0?g/(Number(food.grams)||100):q;
+    let label=sel.options[sel.selectedIndex]?.textContent||'serving',detail=sel.value==='custom'?round(g)+' g':one(q)+' × '+label;
+    return foodToEntry(food,mult,detail)
+  }
+  function update(){custom.classList.toggle('hidden',sel.value!=='custom');let c=compute();calc.textContent='Adds '+round(c.kcal)+' cal · P '+one(c.protein)+'g · C '+one(c.carbs)+'g · F '+one(c.fat)+'g · Fiber '+one(c.fiber)+'g'}
+  qty.oninput=update;sel.onchange=update;grams.oninput=update;
+  item.querySelector('.result-top').onclick=async()=>{
+    let hidden=exp.classList.contains('hidden');document.querySelectorAll('.result-expand').forEach(x=>x.classList.add('hidden'));
+    if(hidden){exp.classList.remove('hidden');if(food.fdcId){calc.textContent='Loading serving sizes…';let m=await loadUsdaMeasures(food);fillMeasures(m)}update();qty.focus()}
+  };
+  item.querySelector('.add').onclick=()=>{let e=compute();if(e.kcal||e.protein||e.carbs||e.fat||e.fiber){addEntry(e);rememberRecentFood(food);$('foodSearch').value='';$('searchResults').innerHTML=''}else toast('Choose a valid serving amount')};
+  item.querySelector('.fav').onclick=()=>saveFavorite(food);
+  if(isFav)item.querySelector('.fav').classList.add('hidden');
+  return item
+}
+function saveFavorite(food){
+  let favs=load('favorites',[]);let clean={name:food.name,kcal:food.kcal,protein:food.protein||0,carbs:food.carbs||0,fat:food.fat||0,fiber:food.fiber||0,serving:food.serving||'1 serving',grams:food.grams||100,source:food.source||'',fdcId:food.fdcId||null,measures:Array.isArray(food.measures)?food.measures.slice(0,12):null};
+  if(!favs.some(f=>f.name===clean.name)){favs.push(clean);save('favorites',favs);renderFavorites();toast('Saved favorite')}
+}
+function renderFavorites(){let list=$('favoritesList'),favs=load('favorites',[]);list.innerHTML='';if(!favs.length){$('favEmpty').classList.remove('hidden');return}$('favEmpty').classList.add('hidden');favs.forEach(f=>list.appendChild(foodResult(f,true,false)))}
+
 function addWater(oz){oz=parseFloat(oz)||0;if(oz>0){addEntry({name:'Water',kcal:0,protein:0,carbs:0,fat:0,fiber:0,water:oz,detail:round(oz)+' oz'})}}$('quickWater').onclick=()=>addWater(8);document.querySelectorAll('.water-add').forEach(b=>b.onclick=()=>addWater(b.dataset.oz));$('customWaterAdd').onclick=()=>{addWater($('customWaterOz').value);$('customWaterOz').value=''};
 $('goalDisplay').onclick=()=>{$('goalInput').value=settings.calGoal;$('goalEdit').classList.remove('hidden');$('goalInput').focus()};$('goalSave').onclick=()=>{let v=parseInt($('goalInput').value,10);if(v>0){settings.calGoal=v;save('settings',settings)}$('goalEdit').classList.add('hidden');renderDashboard()};
 function renderProgress(){renderChart();renderWaterChart();renderFiberChart();renderWalkChart();renderProgressSnapshot();renderHistory();renderWeights()}
@@ -310,8 +450,8 @@ function renderWalkingSummary(){if(!$('walkWeekMiles'))return;let week=currentWe
 $('addWalkBtn').onclick=()=>addWalk($('walkMiles').value,$('walkMinutes').value,$('walkSteps').value,$('walkNote').value);document.querySelectorAll('.quick-walk').forEach(b=>b.onclick=()=>addWalk(b.dataset.miles,'','','Quick walk'));if($('walkDate')){$('walkDate').value=selectedKey;$('walkDate').onchange=()=>{if($('walkDate').value){selectedKey=$('walkDate').value;if($('logDate'))$('logDate').value=selectedKey;refreshActiveEntries();renderAll();toast('Editing '+selectedKey)}};$('walkJumpToday').onclick=()=>{selectedKey=todayKey();if($('logDate'))$('logDate').value=selectedKey;$('walkDate').value=selectedKey;refreshActiveEntries();renderAll();toast('Editing today')}}
 $('saveWeight').onclick=()=>{let w=parseFloat($('weightInput').value),gw=parseFloat($('goalWeightInput').value);if(gw>0){settings.goalWeight=gw;save('settings',settings)}if(w>0){let weights=load('weights',[]).filter(x=>x.date!==selectedKey);weights.push({date:selectedKey,weight:w});weights.sort((a,b)=>a.date.localeCompare(b.date));save('weights',weights);$('weightInput').value='';toast('Weight saved')}renderProgress()};
 function renderProfile(){const hasName=!!(settings.userName||'').trim(),photo=localStorage.getItem('trakfit_profile_photo')||'';if($('profileDisplay'))$('profileDisplay').style.display=hasName?'block':'none';if($('profileEditor'))$('profileEditor').style.display=hasName?'none':'block';if($('profileNameDisplay'))$('profileNameDisplay').textContent=settings.userName||'';if($('setUserName'))$('setUserName').value=settings.userName||'';[['profilePhotoDisplay','profilePhotoPlaceholder'],['profilePhotoPreview','profilePhotoEditorPlaceholder']].forEach(([i,p])=>{if($(i)){if(photo){$(i).src=photo;$(i).style.display='block';if($(p))$(p).style.display='none'}else{$(i).removeAttribute('src');$(i).style.display='none';if($(p))$(p).style.display='flex'}}});if($('removeProfilePhoto'))$('removeProfilePhoto').style.display=photo?'inline-block':'none'}if($('saveProfile'))$('saveProfile').onclick=()=>{settings.userName=($('setUserName')?.value||'').trim();save('settings',settings);renderProfile();toast(settings.userName?'Profile saved':'Name cleared')};function openProfileEditor(focusName=false,openPhoto=false){if($('profileDisplay'))$('profileDisplay').style.display='none';if($('profileEditor'))$('profileEditor').style.display='block';if($('setUserName'))$('setUserName').value=settings.userName||'';if(openPhoto&&$('profilePhotoInput'))$('profilePhotoInput').click();else if(focusName&&$('setUserName'))$('setUserName').focus()}if($('profilePhotoClickTarget')){$('profilePhotoClickTarget').onclick=()=>openProfileEditor(false,true);$('profilePhotoClickTarget').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openProfileEditor(false,true)}}}if($('profileNameClickTarget')){$('profileNameClickTarget').onclick=()=>openProfileEditor(true,false);$('profileNameClickTarget').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openProfileEditor(true,false)}}};if($('profilePhotoInput'))$('profilePhotoInput').onchange=e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const img=new Image();img.onload=()=>{const c=document.createElement('canvas'),max=320,s=Math.min(1,max/Math.max(img.width,img.height));c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);c.getContext('2d').drawImage(img,0,0,c.width,c.height);try{localStorage.setItem('trakfit_profile_photo',c.toDataURL('image/jpeg',.82));renderProfile();if($('profileDisplay'))$('profileDisplay').style.display='none';if($('profileEditor'))$('profileEditor').style.display='block'}catch(err){toast('Photo is too large for this device')}};img.src=ev.target.result};r.readAsDataURL(f)};if($('removeProfilePhoto'))$('removeProfilePhoto').onclick=()=>{localStorage.removeItem('trakfit_profile_photo');renderProfile();if($('profileDisplay'))$('profileDisplay').style.display='none';if($('profileEditor'))$('profileEditor').style.display='block'};
-function loadSettingsForm(){['Cal','Protein','Carbs','Fat','Fiber','Water'].forEach(x=>{});if($('setUserName'))$('setUserName').value=settings.userName||'';$('setCalGoal').value=settings.calGoal;$('setProteinGoal').value=settings.proteinGoal;$('setCarbsGoal').value=settings.carbsGoal;$('setFatGoal').value=settings.fatGoal;$('setFiberGoal').value=settings.fiberGoal;$('setWaterGoal').value=settings.waterGoal;$('setWalkGoal').value=settings.walkGoal||2;$('setStepsPerMile').value=settings.stepsPerMile||2200;$('setStartWeight').value=settings.startWeight||'';$('setGoalWeight').value=settings.goalWeight||''}
-$('saveSettings').onclick=()=>{settings.userName=($('setUserName')?.value||'').trim();settings.calGoal=parseInt($('setCalGoal').value,10)||1500;settings.proteinGoal=parseInt($('setProteinGoal').value,10)||120;settings.carbsGoal=parseInt($('setCarbsGoal').value,10)||130;settings.fatGoal=parseInt($('setFatGoal').value,10)||50;settings.fiberGoal=parseInt($('setFiberGoal').value,10)||25;settings.waterGoal=parseInt($('setWaterGoal').value,10)||100;settings.walkGoal=parseFloat($('setWalkGoal').value)||2;settings.stepsPerMile=parseInt($('setStepsPerMile').value,10)||2200;settings.startWeight=parseFloat($('setStartWeight').value)||null;settings.goalWeight=parseFloat($('setGoalWeight').value)||null;save('settings',settings);renderAll();toast('Goals saved')};
+function loadSettingsForm(){['Cal','Protein','Carbs','Fat','Fiber','Water'].forEach(x=>{});if($('setUserName'))$('setUserName').value=settings.userName||'';$('setCalGoal').value=settings.calGoal;$('setProteinGoal').value=settings.proteinGoal;$('setCarbsGoal').value=settings.carbsGoal;$('setFatGoal').value=settings.fatGoal;$('setFiberGoal').value=settings.fiberGoal;$('setWaterGoal').value=settings.waterGoal;$('setWalkGoal').value=settings.walkGoal||2;$('setStepsPerMile').value=settings.stepsPerMile||2200;$('setStartWeight').value=settings.startWeight||'';$('setGoalWeight').value=settings.goalWeight||'';if($('setUsdaApiKey'))$('setUsdaApiKey').value=settings.usdaApiKey||''}
+$('saveSettings').onclick=()=>{settings.userName=($('setUserName')?.value||'').trim();settings.calGoal=parseInt($('setCalGoal').value,10)||1500;settings.proteinGoal=parseInt($('setProteinGoal').value,10)||120;settings.carbsGoal=parseInt($('setCarbsGoal').value,10)||130;settings.fatGoal=parseInt($('setFatGoal').value,10)||50;settings.fiberGoal=parseInt($('setFiberGoal').value,10)||25;settings.waterGoal=parseInt($('setWaterGoal').value,10)||100;settings.walkGoal=parseFloat($('setWalkGoal').value)||2;settings.stepsPerMile=parseInt($('setStepsPerMile').value,10)||2200;settings.startWeight=parseFloat($('setStartWeight').value)||null;settings.goalWeight=parseFloat($('setGoalWeight').value)||null;settings.usdaApiKey=($('setUsdaApiKey')?.value||'').trim();save('settings',settings);renderAll();toast('Goals saved')};
 $('clearToday').onclick=()=>{if(confirm('Clear entries for '+selectedKey+'?')){activeEntries=[];saveEntries(selectedKey,activeEntries);renderAll()}};
 $('exportCsv').onclick=()=>{let rows=[['date','type','name','detail','calories','protein_g','carbs_g','fat_g','fiber_g','water_oz','walk_miles','walk_minutes','walk_steps']];for(let i=364;i>=0;i--){let d=new Date();d.setDate(d.getDate()-i);let k=dateKey(d),ent=entriesFor(k);ent.forEach(e=>rows.push([k,'nutrition',e.name||'',e.detail||'',round(e.kcal),one(e.protein),one(e.carbs),one(e.fat),one(e.fiber),round(e.water),'','','']));walksFor(k).forEach(w=>rows.push([k,'walking',w.note||'Walk',one(w.miles)+' mi','','','','','','',one(w.miles),round(w.minutes),round(w.steps)]))}let csv=rows.map(r=>r.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\n');let blob=new Blob([csv],{type:'text/csv'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='trakfit-export.csv';a.click();URL.revokeObjectURL(url)};
 
@@ -322,7 +462,7 @@ async function startBarcodeScan(){if(!window.ZXingBrowser){$('barcodeStatus').in
 $('startScan').onclick=startBarcodeScan;$('stopScan').onclick=()=>{try{if(scannerControls)scannerControls.stop()}catch(e){}scannerControls=null;$('barcodeVideo').classList.add('hidden');$('stopScan').classList.add('hidden');$('barcodeStatus').innerHTML='<p class="status-line">Camera stopped.</p>'};
 
 document.querySelectorAll('.tab').forEach(btn=>btn.onclick=()=>switchTab(btn.dataset.tab));document.querySelectorAll('[data-tab-jump]').forEach(btn=>btn.onclick=()=>switchTab(btn.dataset.tabJump));
-function switchTab(name){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));['dashboard','food','walking','progress','settings'].forEach(v=>$('view-'+v).classList.toggle('hidden',v!==name));if(name==='progress')renderProgress();if(name==='walking'){renderWalkLog();renderWalkingSummary();setTimeout(()=>$('walkMiles').focus(),50)}if(name==='settings')loadSettingsForm();if(name==='dashboard')renderDashboard();if(name==='food'){refreshActiveEntries();renderLog();renderFavorites();setTimeout(()=>$('foodSearch').focus(),50)}}
+function switchTab(name){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));['dashboard','food','walking','progress','settings'].forEach(v=>$('view-'+v).classList.toggle('hidden',v!==name));if(name==='progress')renderProgress();if(name==='walking'){renderWalkLog();renderWalkingSummary();setTimeout(()=>$('walkMiles').focus(),50)}if(name==='settings')loadSettingsForm();if(name==='dashboard')renderDashboard();if(name==='food'){refreshActiveEntries();renderLog();renderFavorites();renderRecentFoods();setTimeout(()=>$('foodSearch').focus(),50)}}
 loadSettingsForm();renderProfile();renderAll();setupDailySplash(true);
 })();
 </script>
